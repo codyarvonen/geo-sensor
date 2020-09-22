@@ -46,13 +46,15 @@ int PM_Power = 9; //Pin number for MOSFET providing power to the PM Sensor
 
 //Addresses for each permanent variable to be stored for calibration
 //Each calibration parameter will be stored as a double at the given address
-int address_sensitivity = 0; //For CO sensor
-int address_voffset = 8; //For CO sensor
+//(untested)
+int address_sensitivity = 0; //For CO sensor (addresses to store the calibration parameters)
+int address_voffset = 8; //For CO sensor ('')
 int address_m = 16; //For CO2 sensor
 int address_b = 24; //For CO2 sensor
 
 //Default value for each parameter
 //To be used when the system is re-set or if the calibrated value cannot be read
+//(default parameters for calibration that were set manually)
 double default_sensitivity = 2.56; //For CO sensor
 double default_voffset = -.008; //For CO sensor
 double default_m = 11.5; //For CO2 sensor
@@ -64,11 +66,12 @@ double voffset = default_voffset; //For CO sensor
 double m = default_m; //For CO2 sensor
 double b = default_b; //For CO2 sensor
 
+//(called once when arduino is turned on)
 void setup() {
   sensors_on();
   LED_ON(); 
   Wire.begin();
-  Serial.begin(9600); //Begin serial communication for printing to Serial Monitor
+  Serial.begin(9600); //Begin serial communication for printing to Serial Monitor (when connected with laptop via USB)
   if (! rtc.begin()) { //Tries to connect with the clock
     Serial.println("Couldn't find RTC");
   }
@@ -76,7 +79,7 @@ void setup() {
   co2AirSensor.begin();
   co2AirSensor.setMeasurementInterval(1); //Fastest communication time with CO2 Sensor
   co2AirSensor.beginMeasuring();
-  pinMode(CO_Power, OUTPUT);
+  pinMode(CO_Power, OUTPUT); //(these are output pins)
   pinMode(CO2_Power, OUTPUT);
   pinMode(PM_Power, OUTPUT);
   pinMode(Fan_Power, OUTPUT);
@@ -118,7 +121,7 @@ void setup() {
     SD_connect = false;
   }
   for (int i = 0; i < 5; i++) {
-    if (!SD_connect){
+    if (!SD_connect){ //(blinks white if connection to SD was successful; also what signals does SENCICO want?)
       LED_RED();
     }
     else{
@@ -163,6 +166,7 @@ void LED_BLUE() {
   digitalWrite(BLUE, HIGH);
 }
 
+//(Found online but untested)
 unsigned int EEPROM_write_double(int ee, const double& value){
 //For writing to the EEPROM (non-volatile memory) of the arduino
   const byte* p = (const byte*)(const void*)&value;
@@ -172,6 +176,7 @@ unsigned int EEPROM_write_double(int ee, const double& value){
   return i;
 }
 
+//(found online untested)
 unsigned int EEPROM_read_double(int ee, double& value){
 //For reading from the EEPROM (non-volatile memory) of the arduino
   byte* p = (byte*)(void*)&value;
@@ -232,6 +237,7 @@ void FACTORY_RESET() {
 
 }
 
+//IS THIS WORKING (calibration needed)
 double measure_CO() {
   //Return concentration of CO in ppm
   //https://www.spec-sensors.com/wp-content/uploads/2016/10/ULPSM-CO-968-001.pdf
@@ -254,7 +260,7 @@ double measure_CO2() {
   double m = default_m;
   double b = default_b;
   int count = 0;
-  while (!co2AirSensor.dataAvailable())
+  while (!co2AirSensor.dataAvailable()) //(CO2 data isn't available immediately, does it have an interrupt?)
   {
     count ++;
     if (count > 1000) {
@@ -354,7 +360,7 @@ double measure_PM10() {
 void write_to_file(DateTime now, double CO, double CO2, double pm25, double pm10) {
   //Writes most recent values to the excel file
 
-  myFile = SD.open(file_name, FILE_WRITE);
+  myFile = SD.open(file_name, FILE_WRITE); //(writes during the test)
   // if the file opened okay, write to it:
   if (myFile) {
     SD_connect = true;
@@ -434,7 +440,7 @@ void sensors_off()
 
 
 
-
+//(run immediately after setup)
 void loop() {
 
   if ( digitalRead(MODE_SWITCH) == HIGH ) {
@@ -459,7 +465,7 @@ void loop() {
   delay(2000);
   
 
-  int num_trials = 5; //The number of measurements that each sensor will take
+  int num_trials = 5; //The number of measurements that each sensor will take (can change, each takes about a second)
   double CO_sum[num_trials];
   double CO2_sum[num_trials];
   double PM25_sum[num_trials];
@@ -472,7 +478,7 @@ void loop() {
     PM10_sum[i] = measure_PM10();
     delay(100);
   }
-  double CO_value = average(CO_sum, num_trials);
+  double CO_value = average(CO_sum, num_trials); //(custom aveg func discards err results)
   double CO2_value = average(CO2_sum, num_trials);
   double PM25_value = average(PM25_sum, num_trials);
   double PM10_value = average(PM10_sum, num_trials);
@@ -492,6 +498,7 @@ void loop() {
   //TODO: Put the arduino to sleep as well, but it still must connect to the clock and LED
 
   int loop_num = 0; //This variable is a fail-safe to prevent an infinite loop, in case something goes wrong with the clock. 
+  //(needs some work, waits too long??)
   while(rtc.now() < end_loop && loop_num < 60){ //Waits unitl exactly a minute has passed before measuring again.
     delay(900);
     if (!SD_connect){
