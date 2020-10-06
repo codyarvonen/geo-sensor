@@ -436,7 +436,8 @@ void sensors_off()
 
 
 void loop() {
-
+//they have an if statement that calls calibration at beginning, 
+//calibration can only be called at beginning of loop function
   if ( digitalRead(MODE_SWITCH) == HIGH ) {
     //Check if calibration mode
     LED_BLUE();

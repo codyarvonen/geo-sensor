@@ -106,6 +106,8 @@ void loop() {
 
 //This function calculates the composition of CO or CO2 in the gas mix
 
+//They are not 100% sure if their comp function works
+
 float C_Comp(float(C),float(B),float(A),float(ppm)){ //Calculate composition of CO or CO2 in the gas mix given flows
     //C represents the flow of the stream with CO and CO2, B represents the flow of both stream, A represents the flow of the Air stream, ppm represents the tank concentration of CO or CO2
   float comp;
@@ -148,10 +150,14 @@ float line_regress_inter(float(C1),float(C2),float(C3),float(V1),float(V2),float
 //this function linearly regresses flow in mL/min of gas
 
 float find_flow(float(x)){ //This function will find the flow of the gas mixing based off of the paramters in the rotary flow meter.
-  // It will preform a linear regression between the flows given on the data sheet for the flow meter to estimate the flows of the actual system.
+  //It will preform a linear regression between the flows given on 
+  //the data sheet for the flow meter to estimate the flows of the actual system.
   float result;
-  // These if else statements tell the code which to flows to regress between from the data sheet
+  //These if else statements tell the code which to flows to regress 
+  //between from the data sheet
   
+  //takes the height of the bead measured in the test and uses it to find
+  //the value of the flow rate
   if (x>=0 && x<10){
     result = float(0) + ((x-float(0))/(float(10)-float(0)))*(float(269)-float(0)); 
   }
