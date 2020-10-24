@@ -1,5 +1,5 @@
-# GEO
-GEO Sensor Code
+# GEO Sensor Code
+C.O.N.D.O.R.S. 2020-2021
 
 This branch (master) contains the code that is currently found on the Arduino.
 
