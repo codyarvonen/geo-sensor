@@ -1,6 +1,5 @@
-//Code for Everything
-//Creator: Tanner and Kayci
-//Start Date: 10/10/19
+//GEO Sensor Code
+//C.O.N.D.O.R.S. 2020-2021
 
 #include <SPI.h>
 #include <SD.h> //For reading and writing to SD card
