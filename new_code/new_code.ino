@@ -32,6 +32,9 @@ int CO_Vgas = A3; //Analog pin, Pin #1 on sensor
 int CO_Vref = A2; //Analog pin, Pin #2 on
 int Vtemp = A1;
 int CO_Power = A0; //Pin number for MOSFET providing power to the CO Sensor
+float tempSpan = 18.0;
+float tempOffset = 87.0;
+float zeroTemp = 20.0;
 
 //CO2 Setup:
 SCD30 co2AirSensor;
@@ -312,6 +315,7 @@ float(inter_CO); //final regressed intercept of CO curve
 float(inter_CO2); //final regressed intercept of C2 curve
 
 //These functions are for reading and writing to EEPROM
+//We found them here: https://www.alexenglish.info/2014/05/saving-floats-longs-ints-eeprom-arduino-using-unions/
 float readFloat(unsigned int addr)
 {
     union
@@ -686,11 +690,53 @@ double measure_CO() {
     double TIA_Gain = 100;
     double M = sensitivity * TIA_Gain * pow(10, -6);
     double ppm = (Vgas - Vgas0) / M;
+
+    float temp = getCOTemp();
+    float tempDiff = temp - float(20);
+    float ppmBias;
+
+    if (tempDiff < float(-20)) {
+        ppmBias = .06 * (tempDiff + 20) - 6;
+    } else if (tempDiff <= float(5)) {
+        ppmBias = 0.3 * tempDiff;
+    } else {
+        ppmBias = 1.5 + 1.4 * (tempDiff - 5);
+    }
+
+    ppm -= ppmBias;
     return ppm;
+
     Serial.print(Vgas);
     Serial.print(" ");
     Serial.println(Vref);
+}
 
+float getCOTemp() {
+    unsigned long measureTime = millis() + 10000; //milliseconds to sense temperature
+    unsigned long totalVoltage = 0;
+    int measurements = 0;
+    float voltsADC = 5.0; //Voltage for ADC conversion of Vtemp
+    float thermADC = 3.3; //Voltage supplied to ULP
+
+    //ADD PRINT TO CSV FILE AND SERIAL MONITOR
+
+    do {
+        totalVoltage += analogRead(Vtemp);
+        delay(1);
+        measurements++;
+    } while (millis() < measureTime);
+
+    float avgVoltage = float(totalVoltage) / float(measurements); //Calculate avg voltage over measurements taken
+    float volts = avgVoltage * voltsADC / 1024.0;
+    float temp = (tempOffset / thermADC) * volts - tempSpan;
+
+    if (temp < -20 || temp > 40) {
+        //THROW AN ERROR
+        Serial.print("ERROR: The calculated temperature was ");
+        Serial.print(temp);
+        Serial.println(" which is outside of the sensor's range.")
+    }
+    else return temp;
 }
 
 double measure_CO2() {
