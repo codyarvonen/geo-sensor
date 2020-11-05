@@ -169,6 +169,7 @@ void setup() {
     pinMode(Fan_Power, OUTPUT);
     pinMode(SD_Power, OUTPUT);
     pinMode(53, OUTPUT);
+    pinMode(MODE_SWITCH, INPUT);
     SD.begin(53);
 
     Serial.println("CO, CO2, PM 2.5, PM 10");
@@ -795,6 +796,52 @@ double measure_PM10() {
 
     return pm10;
 }
+
+/*****************************************
+*This function writes to SD card
+//in example (https://youtu.be/oTXi6kYg0D4)
+    //using pins 11, 12, 13 as SPI protocol (MOSI, MISO, SCLK)
+    //CS on pin 4 (this is the pin that sends the serial communication)
+    //pwr an gnd
+//on the mega
+    //using  d50 (miso), d51 (mosi), d52 (sclk), d53 (cs), d48 (pwr), 
+
+void setup() {
+    //open serial communication and wait for port to open:
+    Serial.begin(9600);
+
+    while(!Serial){
+        ; //wait for serial port to connect.  Needed for native USB port only
+    }
+
+Serial.print("Initializing SD card...");
+
+if (!SD.begin(4)){
+    Serial.println("initialization failed");
+    while (1);
+}
+Serial.println("initialization done");
+
+if (SD.exists("example.txt")){
+    Serial.println("example.txt exists");
+}
+else{
+    Serial.println("example.txt doesn't exist");
+}
+
+//open new file and immediately close it:
+Serial.println("creating example.txt...");
+myFile = SD.open("example.txt", FILE_WRITE);
+myFile.write("Hello");
+Serial.println("Writing to file successful");
+myfile.close();
+}
+
+void loop(){
+    //do nothing
+}
+
+******************************************/
 
 void write_to_file(DateTime now, double CO, double CO2, double pm25, double pm10) {
     //Writes most recent values to the excel file
