@@ -687,7 +687,16 @@ double measure_CO() {
     double TIA_Gain = 100;
     double M = sensitivity * TIA_Gain * pow(10, -6);
     double ppm = (Vgas - Vgas0) / M;
+
+    if (Serial.read(MODE_SWITCH) == LOW) {
+        double m = readFloat(0);
+        double b = readFloat(8);
+
+        return (ppm * m + b);
+    }
+
     return ppm;
+    
     Serial.print(Vgas);
     Serial.print(" ");
     Serial.println(Vref);
@@ -697,8 +706,6 @@ double measure_CO() {
 double measure_CO2() {
     //Return Concentration of CO2 in ppm
     double co2Val;
-    double m = default_m;
-    double b = default_b;
     int count = 0;
     while (!co2AirSensor.dataAvailable())
     {
@@ -710,7 +717,15 @@ double measure_CO2() {
     }
     co2Val = co2AirSensor.getCO2();
     LED_GREEN();
-    return (co2Val * m + b);
+
+    if (Serial.read(MODE_SWITCH) == LOW) {
+        double m = readFloat(4);
+        double b = readFloat(12);
+
+        return (co2Val * m + b);
+    }
+
+    return co2Val;
 }
 
 double measure_PM25() {
