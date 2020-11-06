@@ -79,77 +79,6 @@ void sensors_off()
     digitalWrite(SD_Power, HIGH);
 }
 
-void loop() {
-
-    Serial.println(digitalRead(MODE_SWITCH));
-
-    if ( digitalRead(MODE_SWITCH) == LOW ) {
-        //Check if calibration mode
-        LED_BLUE();
-        Serial.println("Calibrate");
-        calibrate();
-        LED_RED();
-
-        while ( digitalRead(MODE_SWITCH) == LOW ) {
-            delay(500);
-            //Wait until they switch it back to measurement mode
-        }
-    }
-
-    Serial.println("Measuring");
-    DateTime now = rtc.now();
-    DateTime end_loop (now + TimeSpan(0,0,0, measurement_interval));
-
-    LED_GREEN();
-    sensors_on();
-    delay(2000);
-
-
-    int num_trials = 5; //The number of measurements that each sensor will take
-    double CO_sum[num_trials];
-    double CO2_sum[num_trials];
-    double PM25_sum[num_trials];
-    double PM10_sum[num_trials];
-
-    for (int i = 0; i < num_trials; i++) {
-        CO_sum[i] = measure_CO();
-        CO2_sum[i] = measure_CO2();
-        PM25_sum[i] = measure_PM25();
-        PM10_sum[i] = measure_PM10();
-        delay(100);
-    }
-    double CO_value = average(CO_sum, num_trials);
-    double CO2_value = average(CO2_sum, num_trials);
-    double PM25_value = average(PM25_sum, num_trials);
-    double PM10_value = average(PM10_sum, num_trials);
-
-    Serial.print(CO_value);
-    Serial.print(", ");
-    Serial.print(CO2_value);
-    Serial.print(", ");
-    Serial.print(PM25_value);
-    Serial.print(", ");
-    Serial.print(PM10_value);
-    Serial.println("");
-
-    write_to_file(now, CO_value, CO2_value, PM25_value, PM10_value);
-    delay(1000);
-    sensors_off(); //Turns the sensors off when they are not in use
-    //TODO: Put the arduino to sleep as well, but it still must connect to the clock and LED
-
-    int loop_num = 0; //This variable is a fail-safe to prevent an infinite loop, in case something goes wrong with the clock.
-    while(rtc.now() < end_loop && loop_num < 60){ //Waits unitl exactly a minute has passed before measuring again.
-        delay(900);
-        if (!SD_connect){
-            LED_RED(); //Blinks red if the sensor was unable to write to the SD card
-        }
-        else{
-            LED_GREEN(); //Blinks green once every second
-        }
-        delay(100);
-        LED_OFF();
-    }
-}
 
 void setup() {
     sensors_on();
@@ -217,6 +146,79 @@ void setup() {
         delay(500);
     }
 }
+
+void loop() {
+
+    Serial.println(digitalRead(MODE_SWITCH));
+
+    if ( digitalRead(MODE_SWITCH) == 0 ) {
+        //Check if calibration mode
+        LED_BLUE();
+        Serial.println("Calibrate");
+        calibrate();
+        LED_RED();
+
+        while ( digitalRead(MODE_SWITCH) == 0 ) {
+            delay(500);
+            //Wait until they switch it back to measurement mode
+        }
+    }
+
+    Serial.println("Measuring");
+    DateTime now = rtc.now();
+    DateTime end_loop (now + TimeSpan(0,0,0, measurement_interval));
+
+    LED_GREEN();
+    sensors_on();
+    delay(2000);
+
+
+    int num_trials = 5; //The number of measurements that each sensor will take
+    double CO_sum[num_trials];
+    double CO2_sum[num_trials];
+    double PM25_sum[num_trials];
+    double PM10_sum[num_trials];
+
+    for (int i = 0; i < num_trials; i++) {
+        CO_sum[i] = measure_CO();
+        CO2_sum[i] = measure_CO2();
+        PM25_sum[i] = measure_PM25();
+        PM10_sum[i] = measure_PM10();
+        delay(100);
+    }
+    double CO_value = average(CO_sum, num_trials);
+    double CO2_value = average(CO2_sum, num_trials);
+    double PM25_value = average(PM25_sum, num_trials);
+    double PM10_value = average(PM10_sum, num_trials);
+
+    Serial.print(CO_value);
+    Serial.print(", ");
+    Serial.print(CO2_value);
+    Serial.print(", ");
+    Serial.print(PM25_value);
+    Serial.print(", ");
+    Serial.print(PM10_value);
+    Serial.println("");
+
+    write_to_file(now, CO_value, CO2_value, PM25_value, PM10_value);
+    delay(1000);
+    sensors_off(); //Turns the sensors off when they are not in use
+    //TODO: Put the arduino to sleep as well, but it still must connect to the clock and LED
+
+    int loop_num = 0; //This variable is a fail-safe to prevent an infinite loop, in case something goes wrong with the clock.
+    while(rtc.now() < end_loop && loop_num < 60){ //Waits unitl exactly a minute has passed before measuring again.
+        delay(900);
+        if (!SD_connect){
+            LED_RED(); //Blinks red if the sensor was unable to write to the SD card
+        }
+        else{
+            LED_GREEN(); //Blinks green once every second
+        }
+        delay(100);
+        LED_OFF();
+    }
+}
+
 
 void LED_ON() {
     digitalWrite(RED, HIGH);
@@ -688,7 +690,7 @@ double measure_CO() {
     double M = sensitivity * TIA_Gain * pow(10, -6);
     double ppm = (Vgas - Vgas0) / M;
 
-    if (Serial.read(MODE_SWITCH) == LOW) {
+    if (digitalRead(MODE_SWITCH) == 1) {
         double m = readFloat(0);
         double b = readFloat(8);
 
@@ -696,7 +698,7 @@ double measure_CO() {
     }
 
     return ppm;
-    
+
     Serial.print(Vgas);
     Serial.print(" ");
     Serial.println(Vref);
@@ -718,7 +720,7 @@ double measure_CO2() {
     co2Val = co2AirSensor.getCO2();
     LED_GREEN();
 
-    if (Serial.read(MODE_SWITCH) == LOW) {
+    if (digitalRead(MODE_SWITCH) == 1) {
         double m = readFloat(4);
         double b = readFloat(12);
 
