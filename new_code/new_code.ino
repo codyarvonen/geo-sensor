@@ -459,7 +459,7 @@ void regressionLoop () {
     //measure C02
     CO2volt2 = measure_CO2();
     //measure C0
-    COvolt2 = measure_CO2();
+    COvolt2 = measure_CO();
 
     //wait for device to reach steady state
     delay(steady_state_time);
@@ -495,12 +495,26 @@ void regressionLoop () {
     //measure C02
     CO2volt3 = measure_CO2();
     //measure C0
-    COvolt3 = measure_CO2();
+    COvolt3 = measure_CO();
 
     //wait for device to reach steady state
     delay(steady_state_time);
 
     // Pull variables var11, var12, var13,volt1 etc... for all three runs from GUI
+
+    Serial.println("THESE ARE THE RAW VALUES");
+    Serial.print("CO2volt1 = ");
+    Serial.println(CO2volt1);
+    Serial.print("COvolt1 = ");
+    Serial.println(COvolt1);
+    Serial.print("CO2volt2 = ");
+    Serial.println(CO2volt2);
+    Serial.print("COvolt2 = ");
+    Serial.println(COvolt2);
+    Serial.print("CO2volt3 = ");
+    Serial.println(CO2volt3);
+    Serial.print("COvolt3 = ");
+    Serial.println(COvolt3);
 
     //Calculate the flows
     flow11 = find_flow(var11);
@@ -523,15 +537,43 @@ void regressionLoop () {
     CO_conc3 = C_Comp(flow31,flow32,flow33,CO_Tank);
     CO2_conc3 = C_Comp(flow31,flow32,flow33,CO2_Tank);
 
+    Serial.println("THESE ARE THE CALCULATED CONCENTRATIONS");
+    Serial.print("CO_conc1 = ");
+    Serial.println(CO_conc1);
+    Serial.print("CO2_conc1 = ");
+    Serial.println(CO2_conc1);
+    Serial.print("CO_conc2 = ");
+    Serial.println(CO_conc2);
+    Serial.print("CO2_conc2 = ");
+    Serial.println(CO2_conc2);
+    Serial.print("CO_conc3 = ");
+    Serial.println(CO_conc3);
+    Serial.print("CO2_conc3 = ");
+    Serial.println(CO2_conc3);
+
 
 
 //THESE FINAL FOUR PARAMTERS ARE WHAT NEEDS TO BE IMPLEMENTED INTO THE FINAL CODE
 
     slope_CO = line_regress_slope(CO_conc1,CO_conc2,CO_conc3,COvolt1,COvolt2,COvolt3);
+    lr.reset();
     slope_CO2 = line_regress_slope(CO2_conc1,CO2_conc2,CO2_conc3,CO2volt1,CO2volt2,CO2volt3);
+    lr.reset();
 
     inter_CO = line_regress_inter(CO_conc1,CO_conc2,CO_conc3,COvolt1,COvolt2,COvolt3);
+    lr.reset();
     inter_CO2 = line_regress_inter(CO2_conc1,CO2_conc2,CO2_conc3,CO2volt1,CO2volt2,CO2volt3);
+    lr.reset();
+
+    Serial.println("THESE VALUES ARE THE CALIBRATION VALUES");
+    Serial.print("slope_CO = ");
+    Serial.println(slope_CO);
+    Serial.print("slope_CO2 = ");
+    Serial.println(slope_CO2);
+    Serial.print("inter_CO = ");
+    Serial.println(inter_CO);
+    Serial.print("inter_CO2 = ");
+    Serial.println(inter_CO2);
 
     writeFloat(0, slope_CO);
     writeFloat(4, slope_CO2);
@@ -565,7 +607,7 @@ float C_Comp(float(C),float(B),float(A),float(ppm)){ //Calculate composition of 
 
 float line_regress_slope(float(C1),float(C2),float(C3),float(V1),float(V2),float(V3)){
     // C1,C2,C3 are three compositions and V1,V2,V3 are the voltages associated with those compositions
-
+    
     lr.learn(C1,V1);
     lr.learn(C2,V2);
     lr.learn(C3,V3);
@@ -581,7 +623,7 @@ float line_regress_slope(float(C1),float(C2),float(C3),float(V1),float(V2),float
 
 float line_regress_inter(float(C1),float(C2),float(C3),float(V1),float(V2),float(V3)){
     // C1,C2,C3 are three compositions and V1,V2,V3 are the voltages associated with those compositions
-
+    
     lr.learn(C1,V1);
     lr.learn(C2,V2);
     lr.learn(C3,V3);
