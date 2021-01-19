@@ -22,7 +22,7 @@ bool SD_connect = false;
 int RED = 45; //Pin number for Red in RGB LED
 int GREEN = 46; //Pin number for Green in RGB LED
 int BLUE = 44; //Pin number for Blue in RGB LED
-int MODE_SWITCH = 6; //HIGH indicates calibration mode, LOW indicates measurement mode
+int MODE_SWITCH = 6; //HIGH indicates calibration mode, LOW indicates measurement mode (IS OUR PIN FOR ON/OFF 6?)
 
 int Fan_Power = 5; //Pin number for MOSFET providing power to the fan
 int SD_Power = 48; //Pin number for MOSFET providing power to the  SD card reader
@@ -63,17 +63,17 @@ double voffset = default_voffset; //For CO sensor
 double m = default_m; //For CO2 sensor
 double b = default_b; //For CO2 sensor
 
-void sensors_on()
+void sensors_on() //THIS NEEDS TO BE EDITED. NOTE THAT THE PREVIOUS GROUP USED THE REVERSE MOSFETS SO I THINK WHAT'S "HIGH" NEEDS TO BE "LOW" AND VICE VERSA
 {
     //Most of the sensors need to be written LOW to
     digitalWrite(CO_Power, LOW);
     digitalWrite(CO2_Power, LOW);
     digitalWrite(PM_Power, LOW);
-    digitalWrite(Fan_Power, HIGH); //
+    digitalWrite(Fan_Power, HIGH); //also, when is the fan running? if we are going to be using (1) mosfet, will it be connected through that as well?
     digitalWrite(SD_Power, LOW);
 }
 
-void sensors_off()
+void sensors_off() //DITTO TO ABOVE
 {
     digitalWrite(CO_Power, HIGH);
     digitalWrite(CO2_Power, HIGH);
@@ -91,7 +91,7 @@ void loop() {
         LED_BLUE();
         Serial.println("Calibrate");
         calibrate();
-        LED_RED();
+        LED_RED(); //WE NEED TO FIGURE OUT WHAT'S GOING ON RIGHT HERE (does this mean that the calibration is over? do we need this?)
 
         while ( digitalRead(MODE_SWITCH) == LOW ) {
             delay(500);
