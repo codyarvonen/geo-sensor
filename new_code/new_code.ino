@@ -692,6 +692,10 @@ double measure_CO() {
     double ppm = (Vgas - Vgas0) / M;
 
     float temp = getCOTemp();
+    
+    Serial.print("Value given by CO thermometer: "); //testing: what temp does the CO therm read?
+    Serial.println(temp);
+        
     float tempDiff = temp - float(20);
     float ppmBias;
 
@@ -702,10 +706,17 @@ double measure_CO() {
     } else {
         ppmBias = 1.5 + 1.4 * (tempDiff - 5);
     }
-
+    
+    Serial.print("Amount that the ppm will be altered: "); // testing: does is print out the correct bias of ppm based on the temp?
+    Serial.println(ppmBias);
+    
     ppm -= ppmBias;
+    
+    Serial.print("Final "); // print out ppm (final measurement)
+    Serial.print(ppm);
+    
     return ppm;
-
+    
     Serial.print(Vgas);
     Serial.print(" ");
     Serial.println(Vref);
@@ -718,7 +729,7 @@ float getCOTemp() {
     float voltsADC = 5.0; //Voltage for ADC conversion of Vtemp
     float thermADC = 3.3; //Voltage supplied to ULP
 
-    //ADD PRINT TO CSV FILE AND SERIAL MONITOR
+    Serial.print( //testing temp calibration
 
     do {
         totalVoltage += analogRead(Vtemp);
@@ -729,7 +740,7 @@ float getCOTemp() {
     float avgVoltage = float(totalVoltage) / float(measurements); //Calculate avg voltage over measurements taken
     float volts = avgVoltage * voltsADC / 1024.0;
     float temp = (tempOffset / thermADC) * volts - tempSpan;
-
+        //temp = (print value)
     if (temp < -20 || temp > 40) {
         //THROW AN ERROR
         Serial.print("ERROR: The calculated temperature was ");
