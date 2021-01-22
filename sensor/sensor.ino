@@ -6,17 +6,18 @@
 //#include <SD.h> //For reading and writing to SD card
 #include <Wire.h>
 //#include <SparkFun_SCD30_Arduino_Library.h> //Library for the CO2 sensor
-#include <EEPROM.h> //For writing to non-volatile memory
+//#include <EEPROM.h> //For writing to non-volatile memory
 #include <String.h> //Supports use of strings
 #include <math.h> //Supports math for floating point numbers
 #include <SoftwareSerial.h> //For serial communication
 #include <RTClib.h> //For the real time clock
-#include "LinearRegression.h" //Used for calibration
+//#include "LinearRegression.h" //Used for calibration
 #include <Arduino.h>
 #include "CO.h"
 #include "CO2.h"
 #include "PM.h"
 #include "SD_CARD.h"
+#include "Calibrate.h"
 
 //PIN NUMBERS
 int RED = 45; //Pin number for Red in RGB LED
@@ -31,6 +32,7 @@ CO co;
 CO2 co2;
 PM pm;
 SDCard sd;
+Calibrate calibrate;
 
 //SETUP VALUES
 
@@ -61,24 +63,20 @@ void setup() {
       sd.printHeader();
     }
 
-    //TODO: Move calibration if statement here?
-}
-
-void loop() {
     Serial.println(digitalRead(MODE_SWITCH)); //TODO: remove, only to test current mode value
     
     //Currently the switch is broken, must change values in code
-    if (digitalRead(MODE_SWITCH) == 1) { //If in calibration mode
-        LED_BLUE();
+    if (digitalRead(MODE_SWITCH) == 0) { //If in calibration mode
         Serial.println("Calibrating");
-        //calibrate();
-        LED_RED();
-
-        while ( digitalRead(MODE_SWITCH) == 1) {
+        LED_BLUE();
+        calibrate.calibrate();
+        while ( digitalRead(MODE_SWITCH) == 0) { //Wait until switched back to measurement mode
             delay(500);
-            //Wait until they switch it back to measurement mode
         }
     }
+}
+
+void loop() {
 
     Serial.println("Measuring");
     double measurementInterval = 60.0; //will collect data every 60 seconds
