@@ -51,8 +51,7 @@ void setup() {
     pinMode(co2.power, OUTPUT);
     pinMode(pm.power, OUTPUT);
     pinMode(fanPower, OUTPUT);
-    pinMode(sd.power, OUTPUT);
-    pinMode(53, OUTPUT);
+    pinMode(53, OUTPUT); //this is the wake-up call for the SS to get working
     pinMode(MODE_SWITCH, INPUT);
 
     if (!sd.isConnected) { //Check if SD card is connected, if not LED will flash red three times
