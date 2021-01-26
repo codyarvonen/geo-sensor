@@ -1,3 +1,9 @@
+// GEO Cookstove Sensor Code
+// C.O.N.D.O.R.S. 2020-2021
+// Arduino code for the cookstove sensor.
+// PM.cpp
+// This file contains function declarations for the PM sensor.
+
 #include "PM.h"
 
 double PM::measure25() {

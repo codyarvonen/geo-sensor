@@ -1,3 +1,9 @@
+// GEO Cookstove Sensor Code
+// C.O.N.D.O.R.S. 2020-2021
+// Arduino code for cookstove sensor.
+// SDCard.h
+// This file contains pin number, variable, and function declarations for the SD card.
+
 #ifndef SD_H
 #define SD_H
 

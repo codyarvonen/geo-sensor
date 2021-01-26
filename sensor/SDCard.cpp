@@ -1,4 +1,10 @@
-#include "SD_CARD.h"
+// GEO Cookstove Sensor Code
+// C.O.N.D.O.R.S. 2020-2021
+// Arduino code for cookstove sensor.
+// SD_CARD.cpp
+// This file contains function declarations for the SD card.
+
+#include "SDCard.h"
 
 void SDCard::printHeader() { //Prints column headers to csv file
     Serial.println("CO, CO2, PM 2.5, PM 10");
