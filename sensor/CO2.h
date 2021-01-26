@@ -6,7 +6,6 @@
 class CO2 {
   public:
     SCD30 sensor;
-    int power = 13; //Pin number for MOSFET providing power to the CO2 Sensor
     
     //Addresses for each permanent variable to be stored for calibration
     //Each calibration parameter will be stored as a double at the given address
