@@ -28,8 +28,8 @@ int RED = 45; //Pin number for Red in RGB LED
 int GREEN = 46; //Pin number for Green in RGB LED
 int BLUE = 44; //Pin number for Blue in RGB LED
 int MODE_SWITCH = 6; //HIGH indicates calibration mode, LOW indicates measurement mode
-
-int fanPower = 5; //Pin number for MOSFET providing power to the fan
+int sensorPower = D5; //Pin number for MOSFET providing power to the sensors	
+int fanPower = D6; //Pin number for MOSFET providing power to the fan
 
 //OBJECTS
 CO co;
@@ -47,11 +47,9 @@ void setup() {
 
     co2.sensor.begin();
     co2.sensor.setMeasurementInterval(1); //Fastest communication time with CO2 Sensor
-    pinMode(co.power, OUTPUT);
-    pinMode(co2.power, OUTPUT);
-    pinMode(pm.power, OUTPUT);
-    pinMode(fanPower, OUTPUT);
-    pinMode(53, OUTPUT); //this is the wake-up call for the SS to get working
+    pinMode(sensorPower, OUTPUT); //turns on power for MOSFET of all 3 sensors	
+    pinMode(fanPower, OUTPUT);	
+    pinMode(53, OUTPUT); //this is the wake-up call for the SS to get working	
     pinMode(MODE_SWITCH, INPUT);
 
     if (!sd.isConnected) { //Check if SD card is connected, if not LED will flash red three times
@@ -140,19 +138,13 @@ void loop() {
 void sensorsOn() {
     //Most of the sensors need to be written LOW to
     //TODO: Change to HIGH with new MOSFAT??
-    digitalWrite(co.power, LOW);
-    digitalWrite(co2.power, LOW);
-    digitalWrite(pm.power, LOW);
+    digitalWrite(sensorPower, HIGH);	
     digitalWrite(fanPower, HIGH);
-    digitalWrite(sd.power, LOW);
 }
 
 void sensorsOff() {
-    digitalWrite(co.power, HIGH);
-    digitalWrite(co2.power, HIGH);
-    digitalWrite(pm.power, HIGH);
+    digitalWrite(sensorPower, LOW);	
     digitalWrite(fanPower, LOW);
-    digitalWrite(sd.power, HIGH);
 }
 
 
