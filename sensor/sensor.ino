@@ -45,7 +45,7 @@ void setup() {
     co2.sensor.setMeasurementInterval(1); //Fastest communication time with CO2 Sensor
     pinMode(sensorPower, OUTPUT); //turns on power for MOSFET of all 3 sensors
     pinMode(fanPower, OUTPUT);
-    pinMode(53, OUTPUT); //what's this??
+    pinMode(53, OUTPUT); //this is the wake-up call for the SS to get working
     pinMode(MODE_SWITCH, INPUT);
 
     if (!sd.isConnected) {
