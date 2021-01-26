@@ -24,8 +24,8 @@ int RED = 45; //Pin number for Red in RGB LED
 int GREEN = 46; //Pin number for Green in RGB LED
 int BLUE = 44; //Pin number for Blue in RGB LED
 int MODE_SWITCH = 6; //HIGH indicates calibration mode, LOW indicates measurement mode
-
-int fanPower = 5; //Pin number for MOSFET providing power to the fan
+int sensorPower = D5; //Pin number for MOSFET providing power to the sensors
+int fanPower = D6; //Pin number for MOSFET providing power to the fan
 
 //OBJECTS
 CO co;
@@ -43,12 +43,9 @@ void setup() {
 
     co2.sensor.begin();
     co2.sensor.setMeasurementInterval(1); //Fastest communication time with CO2 Sensor
-    pinMode(co.power, OUTPUT); //TODO: Would these be better in the class files?
-    pinMode(co2.power, OUTPUT);
-    pinMode(pm.power, OUTPUT);
+    pinMode(sensorPower, OUTPUT); //turns on power for MOSFET of all 3 sensors
     pinMode(fanPower, OUTPUT);
-    pinMode(sd.power, OUTPUT);
-    pinMode(53, OUTPUT);
+    pinMode(53, OUTPUT); //what's this??
     pinMode(MODE_SWITCH, INPUT);
 
     if (!sd.isConnected) {
@@ -139,20 +136,14 @@ void sensorsOn()
 {
     //Most of the sensors need to be written LOW to
     //TODO: Change to HIGH with new MOSFAT??
-    digitalWrite(co.power, LOW);
-    digitalWrite(co2.power, LOW);
-    digitalWrite(pm.power, LOW);
+    digitalWrite(sensorPower, HIGH);
     digitalWrite(fanPower, HIGH);
-    digitalWrite(sd.power, LOW);
 }
 
 void sensorsOff()
 {
-    digitalWrite(co.power, HIGH);
-    digitalWrite(co2.power, HIGH);
-    digitalWrite(pm.power, HIGH);
+    digitalWrite(sensorPower, LOW);
     digitalWrite(fanPower, LOW);
-    digitalWrite(sd.power, HIGH);
 }
 
 
