@@ -1,3 +1,9 @@
+// GEO Cookstove Sensor Code
+// C.O.N.D.O.R.S. 2020-2021
+// Arduino code for the cookstove sensor.
+// CO.h
+// This file contains pin numbers for the CO sensor, other values for the CO sensor, and any function declarations for the CO sensor.
+
 #ifndef CO_H
 #define CO_H
 

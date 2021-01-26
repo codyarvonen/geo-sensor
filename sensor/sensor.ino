@@ -1,6 +1,10 @@
-//GEO Cookstove Sensor Code
-//C.O.N.D.O.R.S. 2020-2021
-//This is the cookstove sensor Arduino code.
+// GEO Cookstove Sensor Code
+// C.O.N.D.O.R.S. 2020-2021
+// Arduino code for cookstove sensor. The code is broken up into this sensor.ino file and several different classes, for the CO, CO2, and PM sensors, and for the calibration process and the SD card.
+// sensor.ino
+// This file contains pin numbers for the LEDs, the setup and loop functions, the sensorsOn and sensorsOff functions, and the custom average function.
+
+//TODO: Add headers/descriptions to each file
 
 #include <SPI.h>
 //#include <SD.h> //For reading and writing to SD card
@@ -16,7 +20,7 @@
 #include "CO.h"
 #include "CO2.h"
 #include "PM.h"
-#include "SD_CARD.h"
+#include "SDCard.h"
 #include "Calibrate.h"
 
 //PIN NUMBERS
@@ -24,8 +28,8 @@ int RED = 45; //Pin number for Red in RGB LED
 int GREEN = 46; //Pin number for Green in RGB LED
 int BLUE = 44; //Pin number for Blue in RGB LED
 int MODE_SWITCH = 6; //HIGH indicates calibration mode, LOW indicates measurement mode
-int sensorPower = D5; //Pin number for MOSFET providing power to the sensors
-int fanPower = D6; //Pin number for MOSFET providing power to the fan
+
+int fanPower = 5; //Pin number for MOSFET providing power to the fan
 
 //OBJECTS
 CO co;
@@ -43,12 +47,15 @@ void setup() {
 
     co2.sensor.begin();
     co2.sensor.setMeasurementInterval(1); //Fastest communication time with CO2 Sensor
-    pinMode(sensorPower, OUTPUT); //turns on power for MOSFET of all 3 sensors
+    pinMode(co.power, OUTPUT);
+    pinMode(co2.power, OUTPUT);
+    pinMode(pm.power, OUTPUT);
     pinMode(fanPower, OUTPUT);
-    pinMode(53, OUTPUT); //what's this??
+    pinMode(sd.power, OUTPUT);
+    pinMode(53, OUTPUT);
     pinMode(MODE_SWITCH, INPUT);
 
-    if (!sd.isConnected) {
+    if (!sd.isConnected) { //Check if SD card is connected, if not LED will flash red three times
       for (int i = 0; i < 3; i++) {
         LED_RED();
         delay(1000);
@@ -62,7 +69,7 @@ void setup() {
 
     Serial.println(digitalRead(MODE_SWITCH)); //TODO: remove, only to test current mode value
     
-    //Currently the switch is broken, must change values in code
+    //TODO: Currently the switch is broken, always reads 0, must change values in code
     if (digitalRead(MODE_SWITCH) == 0) { //If in calibration mode
         Serial.println("Calibrating");
         LED_BLUE();
@@ -74,10 +81,9 @@ void setup() {
 }
 
 void loop() {
-
     Serial.println("Measuring");
     double measurementInterval = 60.0; //will collect data every 60 seconds
-    int numTrials = 5;
+    int numTrials = 5; //Number of samples that will be taken for each measurement
     
     RTC_PCF8523 rtc; // Real time clock. The time is already set to PERUVIAN TIME
     if (!rtc.begin()) { //Tries to connect with the clock
@@ -90,7 +96,7 @@ void loop() {
     sensorsOn();
     delay(2000); //TODO: Why this delay??
 
-    double coSum[numTrials]; //Arrays used in order to use custom average function that ignores values of -1
+    double coSum[numTrials]; //Arrays used for the sum of the samples in order to use custom average function that ignores values of -1
     double co2Sum[numTrials];
     double pm25Sum[numTrials];
     double pm10Sum[numTrials];
@@ -132,18 +138,22 @@ void loop() {
     //TODO: I didn't include a while loop and a delay statement from the original code here; pending investigation
 }
 
-void sensorsOn()
-{
+void sensorsOn() {
     //Most of the sensors need to be written LOW to
     //TODO: Change to HIGH with new MOSFAT??
-    digitalWrite(sensorPower, HIGH);
+    digitalWrite(co.power, LOW);
+    digitalWrite(co2.power, LOW);
+    digitalWrite(pm.power, LOW);
     digitalWrite(fanPower, HIGH);
+    digitalWrite(sd.power, LOW);
 }
 
-void sensorsOff()
-{
-    digitalWrite(sensorPower, LOW);
+void sensorsOff() {
+    digitalWrite(co.power, HIGH);
+    digitalWrite(co2.power, HIGH);
+    digitalWrite(pm.power, HIGH);
     digitalWrite(fanPower, LOW);
+    digitalWrite(sd.power, HIGH);
 }
 
 
@@ -181,7 +191,7 @@ void LED_BLUE() {
 }
 
 double average(double values[], int len) {
-    //Averages values from a set and ignores values of -1 (This program uses -1 to indicate an error)
+    //Averages values from an array and ignores values of -1
     double sum = 0.0;
     int count = 0;
     for (int i = 0; i < len; i++) {
@@ -195,5 +205,4 @@ double average(double values[], int len) {
     }
     double avg = sum / double(count);
     return avg;
-
 }

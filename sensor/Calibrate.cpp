@@ -1,3 +1,9 @@
+// GEO Cookstove Sensor Code
+// C.O.N.D.O.R.S. 2020-2021
+// Arduino code for the cookstove sensor.
+// Calibrate.cpp
+// This file contains function declarations for the CO and CO2 calibration process.
+
 #include "Calibrate.h"
 
 void Calibrate::calibrate() {
@@ -145,7 +151,7 @@ void Calibrate::calibrate() {
 
 //TODO: Fix me
 float Calibrate::findFlow(float(x)) {//This function will find the flow of the gas mixing based off of the paramters in the rotary flow meter.
-  // It will preform a linear regression between the flows given on the data sheet for the flow meter to estimate the flows of the actual system.
+  // It will perform a linear regression between the flows given on the data sheet for the flow meter to estimate the flows of the actual system.
     float result;
     // These if else statements tell the code which to flows to regress between from the data sheet
 

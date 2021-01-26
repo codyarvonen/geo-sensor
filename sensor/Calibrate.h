@@ -1,3 +1,9 @@
+// GEO Cookstove Sensor Code
+// C.O.N.D.O.R.S. 2020-2021
+// Arduino code for the cookstove sensor.
+// Calibrate.h
+// This file contains variable and function declarations for the CO and CO2 calibration process.
+
 #ifndef CALIBRATE_H
 #define CALIBRATE_H
 
