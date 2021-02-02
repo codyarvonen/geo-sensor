@@ -4,6 +4,21 @@
 // Calibrate.cpp
 // This file contains function declarations for the CO and CO2 calibration process.
 
+//sensor interaction with user (we are thinking we want most of this to be in the instruction manual rather than in the calibration. that would make this process simpler for SENCICO)
+//1. When calibration mode is turned on, gives prompt, "Press ENTER to calibrate CO & CO2 sensors"
+//2. "Note that the calibration process will run several times. Connect calibration device to sensor box and then press ENTER"
+//3. "Is the concentration of CO Xppm & CO2 Xppm? If yes, press ENTER, if no (ask concentrations of CO & CO2)."
+//4. "Is the concentration of the N2 in the air tank Xppm? If yes, press ENTER, if no (ask concentrations N2)."
+//3. "Close all valves (rotometer & gas tanks) and then press ENTER"
+//4. "Open air tank and then press ENTER"
+//5. "Open rotometer until flow rate reaches Xmm^3/sec and then press ENTER"
+//6. "Open CO & CO2 tank until flow rate reaches Xmm^3/sec and then press ENTER"
+//7. "Run calibration? Press ENTER."
+// - waiting point for X amount of min. - records measurement at this concentration 3X and then the average of those three is the value shown to the user
+//8. "Equilibrium reached. CO concentrations measured at Xppm, CO2 concentrations measured at Xppm."
+//9. Repeats steps 3-8 (make sure rotometer is closed first) for different flow rates provided
+//10. "Close all valves, disconnect box. Sensor box has now been calibrated."
+
 #include "Calibrate.h"
 
 void Calibrate::calibrate() {
@@ -31,7 +46,7 @@ void Calibrate::calibrate() {
   delay(1000);
 
   //Read time to reach steady state
-  Serial.println("Enter time to reach steady state in seconds.");
+  Serial.println("Enter time to reach steady state in seconds."); //This is something we need to specify to them in our manual
   while(!Serial.available()) delay(10);
   int steadyStateTime = 1000*Serial.parseFloat();
   delay(1000);
@@ -42,7 +57,7 @@ void Calibrate::calibrate() {
   //Sample 1
   float sample1Heights[3];
   Serial.println("Sample 1");
-  Serial.println("Turn on tank containing CO and CO2 and enter the height.");
+  Serial.println("Turn on tank containing CO and CO2 and enter the height."); //these are instructions that should be provided in the manual
   while(!Serial.available()) delay(10);
   sample1Heights[0] = Serial.parseFloat();
   delay(1000);
