@@ -28,8 +28,8 @@ int RED = 45; //Pin number for Red in RGB LED
 int GREEN = 46; //Pin number for Green in RGB LED
 int BLUE = 44; //Pin number for Blue in RGB LED
 int MODE_SWITCH = 6; //HIGH indicates calibration mode, LOW indicates measurement mode
-int sensorPower = D5; //Pin number for MOSFET providing power to the sensors	
-int fanPower = D6; //Pin number for MOSFET providing power to the fan
+int sensorPower = D8; //Pin number for MOSFET providing power to the sensors	
+int fanPower = D7; //Pin number for MOSFET providing power to the fan
 
 //OBJECTS
 CO co;

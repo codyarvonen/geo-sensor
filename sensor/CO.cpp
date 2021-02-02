@@ -11,7 +11,7 @@ double CO::measure() { //Returns concentration of CO in ppm
   double refVolt = double(analogRead(referenceVolt)) * double(5.0 / 1023.0); //Analog reference voltage
   double vgas = refVolt + voffset;
   double tiaGain = 100;
-  double mwa = sensitivity * tiaGain * pow(10, -6);
-  double ppm = (concVolt - vgas) / mwa;
+  double calFactor = sensitivity * tiaGain * pow(10, -6);
+  double ppm = (concVolt - vgas) / calFactor;
   return ppm;
 }
