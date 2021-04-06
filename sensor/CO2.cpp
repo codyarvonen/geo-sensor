@@ -7,8 +7,10 @@
 #include "CO2.h"
 
 double CO2::measure() {
-  //I TOOK OUT THE WHILE STATEMENT BECAUSE IT MADE NO SENSE. MAY NEED TO REPLACE
-  double ppm = sensor.getCO2();
-  ppm = sensor.getCO2();
+  double ppm;
+  if (scd30.dataReady()){
+    if (!scd30.read()) return 0.00;
+    ppm = scd30.CO2;
+  }
   return ppm;
 }

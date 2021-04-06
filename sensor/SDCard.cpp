@@ -6,9 +6,9 @@
 
 #include "SDCard.h"
 
-void SDCard::printHeader() { //Prints column headers to csv file
+int SDCard::printHeader() { //Prints column headers to csv file
     Serial.println("CO, CO2, PM 2.5, PM 10");
-    SD.begin();
+    SD.begin(CS);
     myFile = SD.open(fileName, FILE_WRITE);
     // if the file opened okay, write to it:
     if (myFile) {
@@ -36,14 +36,16 @@ void SDCard::printHeader() { //Prints column headers to csv file
         myFile.println("      ");
 
         myFile.close();
+        return 1;
     }
     else {
         Serial.println("Failed to connect to SD card");
         isConnected = false;
+        return 0;
     }
 }
 
-void SDCard::writeToFile(DateTime now, double CO, double CO2, double pm25, double pm10) { //Writes most recent values to the csv file
+int SDCard::writeToFile(DateTime now, double CO, double CO2, String pm25, String pm10) { //Writes most recent values to the csv file
     SD.begin();
     myFile = SD.open(fileName, FILE_WRITE);
     // if the file opened okay, write to it:
@@ -78,10 +80,14 @@ void SDCard::writeToFile(DateTime now, double CO, double CO2, double pm25, doubl
         myFile.print(",      ");
         myFile.println("      ");
         myFile.close();
+
+        return 1;
     }
     else {
         Serial.println("Failed to connect to SD card");
         isConnected = false;
+
+        return 0;
     }
 
 }
