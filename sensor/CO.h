@@ -23,7 +23,7 @@ class CO {
     unsigned long int ADC1Result_Zero = 23062;  //Adjust this manually
     
     unsigned long int Rgain = 100E3;
-    double PPB;
+    double PPM;
     float Temperature;
     float Relative_Humidity = 50;
     
