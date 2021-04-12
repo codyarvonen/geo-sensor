@@ -2,8 +2,9 @@
 // C.O.N.D.O.R.S. 2020-2021
 // Arduino code for the cookstove sensor.
 // CO.h
-// This file contains pin numbers for the CO sensor, other values for the CO sensor, and any function declarations for the CO sensor.
-// We were sent this code for the CO sensor by a spec sensor representative
+// This file contains the CO sensor library, including the pin numbers and other necessary variables
+// We received most of this code for the CO sensor by an SPEC sensor representative
+
 
 #ifndef CO_H
 #define CO_H

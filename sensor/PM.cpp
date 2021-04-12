@@ -3,6 +3,8 @@
 // Arduino code for the cookstove sensor.
 // PM.cpp
 // This file contains function declarations for the PM sensor.
+// Much of this code is from https://medium.com/electronza/arduino-measuring-pm2-5-and-pm10-with-honeywell-hpma115s0-703f384c485a
+
 
 #include "PM.h"
 

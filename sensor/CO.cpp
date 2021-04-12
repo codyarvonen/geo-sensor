@@ -3,7 +3,8 @@
 // Arduino code for the cookstove sensor.
 // CO.cpp
 // This file contains function definitions for the CO sensor.
-// We were sent this code for the CO sensor by a spec sensor representative
+// We received most of this code for the CO sensor by an SPEC sensor representative
+
 
 #include "CO.h"
 

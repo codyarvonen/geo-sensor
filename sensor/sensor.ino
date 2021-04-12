@@ -1,146 +1,96 @@
 // GEO Cookstove Sensor Code
 // C.O.N.D.O.R.S. 2020-2021
-// Arduino code for cookstove sensor. The code is broken up into this sensor.ino file and several different classes, for the CO, CO2, and PM sensors, and for the calibration process and the SD card.
+// Arduino code for the cookstove sensor
 // sensor.ino
-// This file contains pin numbers for the LEDs, the setup and loop functions, the sensorsOn and sensorsOff functions, and the custom average function.
+// This file contains setup() and loop(), as well as functions for the LED and SD card
 
-#include <Wire.h>
-#include <math.h> //Supports math for floating point numbers
-#include "SoftwareSerial.h" //For serial communication
-#include "CO.h"
-#include "CO2.h"
-#include "PM.h"
-#include "SDCard.h"
 
-//PIN NUMBERS
-#define RED 24 //Pin number for Red in RGB LED
-#define GREEN 26 //Pin number for Green in RGB LED
-#define BLUE 22 //Pin number for Blue in RGB LED
-#define power 13 //Pin number for MOSFET
+#include <SD.h>   // Used to read/write files to the SD card
+#include <SPI.h>  // Used to communicate with the SD card reader
+#include <RTClib.h>   // Library for the real time clock
+#include <String.h>   // Required to use string data type
+#include "PM.h"   // Header file with PM functions/data
+#include "CO2.h"  // Header file with CO2 functions/data
+#include "CO.h"   // Header file with CO functions/data
 
-//OBJECTS
-CO co;
-CO2 co2;
+// PIN NUMBERS
+#define RED 24  // Pin number for Red in RGB LED
+#define GREEN 26  // Pin number for Green in RGB LED
+#define BLUE 22   // Pin number for Blue in RGB LED
+#define POWER 13   // Pin number for MOSFET (controls power to the fan)
+#define CS 53   // Pin number for SD card reader
+
+// OBJECTS
+RTC_PCF8523 rtc;  // Real time clock object
 PM pm;
-SDCard sd;
-RTC_PCF8523 rtc;
+CO2 co2;
+CO co;
 
-//SETUP VALUES
+// GLOBAL VARIABLES
+File myFile;  // File variable for writing to SD card
+String fileName = "datos.csv";
 
 void setup() {
-    Serial.begin(9600); //Begin serial communication for printing to serial monitor
-    Serial.println("CONDORS Cookstove Sensor");
-    Serial3.begin(9600); //Serial communication port for PM sensor
-    Wire.begin();
-    Serial.println("LED on");
-    //LED_ON();
-    LED_BLUE();
+  
+  Serial.begin(9600);   // Begin serial communication for printing to serial monitor
+  Serial3.begin(9600);  // Serial3 will be used to communicate with the PM sensor
+  Serial.println("CONDORS Cookstove Sensor");
 
-    pinMode(power, OUTPUT); //declares MOSFET pin as output
-    LED_GREEN();
-    
-    digitalWrite(power, HIGH);
-    co2.scd30.begin();
-    LED_BLUE();
-    co2.scd30.setMeasurementInterval(1); //Fastest communication time with CO2 Sensor
+  while (!SD.begin()) {   // Initializes SD card, LED will flash until SD card is present
     LED_RED();
-    pm.my_status = pm.stop_autosend();
-    LED_ON();
-    rtc.begin();
-    LED_GREEN();
-
-    if (sd.printHeader() == 0) { //Check if SD card is connected and print header, if not LED will flash red three times
-      for (int i = 0; i < 3; i++) {
-        LED_OFF();
-        LED_RED();
-        delay(1000);
-        LED_OFF();
-        delay(1000);
-      }
-    }
-    
+    delay(1000);
     LED_OFF();
-    digitalWrite(power, LOW);
+    delay(1000);
+  }
+  
+  rtc.begin();  // Initializes real time clock, uses RTC library
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));   // Will set the real time clock to the time from the computer system
+  printHeader();  // Prints header to the csv file on the SD card
+
+  pm.my_status = pm.stop_autosend();  // Initializes PM sensor, returns status
+  co2.scd30.begin();  // Intializes CO2 sensor
+  co2.scd30.setMeasurementInterval(1);  //Fastest communication time with CO2 Sensor
+
+  pinMode(POWER, OUTPUT);   // Configures MOSFET pin as OUTPUT
+  digitalWrite(POWER, LOW);   // Sets MOSFET pin to LOW
+  
+  LED_GREEN();
+  
 }
 
 void loop() {
-    Serial.println("Measuring");
-    double measurementInterval = 60.0; //will collect data every 60 seconds
-    //int numTrials = 5; //Number of samples that will be taken for each measurement, TODO: Determine if we want to average multiple readings
 
-    sensorsOn();
-    DateTime now = rtc.now();
-    DateTime end_loop (now + TimeSpan(0,0,0, measurementInterval));
+  Serial.println("MOSFET HIGH");
+  digitalWrite(POWER, HIGH);  // Turns on power to the fan
+  delay(3000);
+  
+  pm.measure();   // PM sensor reads measurements, variables in PM library will contain the results
+  String pm25 = pm.pm25;  // Concentration of PM that is 2.5micrometers
+  String pm10 = pm.pm10;  // Concentration of PM that is 10micrometers
+  double ppmCO = co.measure();  // Concentration of CO in parts per million
+  double ppmCO2 = co2.measure();  // Concentration of CO2 in parts per million
+  
+  DateTime now = rtc.now();   // The current time as returned by the real time clock
+  writeToFile(now, ppmCO, ppmCO2, pm25, pm10);
 
-    LED_GREEN();
-    delay(2000);
+  Serial.println("MOSFET LOW");
+  digitalWrite(POWER, LOW);   //Turns off power to the fan
+  delay(3000);
 
-    /*double coSum[numTrials]; //Arrays used for the sum of the samples in order to use custom average function that ignores values of -1
-    double co2Sum[numTrials];
-    double pm25Sum[numTrials];
-    double pm10Sum[numTrials];
-
-    for (int i = 0; i < numTrials; i++) {
-        coSum[i] = co.measure();
-        co2Sum[i] = co2.measure();
-        pm25Sum[i] = pm.measure25();
-        pm10Sum[i] = pm.measure10();
-        delay(100);
-    }
-    double ppmCO = average(coSum, numTrials);
-    double ppmCO2 = average(co2Sum, numTrials);
-    double ppmPM25 = average(pm25Sum, numTrials);
-    double ppmPM10 = average(pm10Sum, numTrials);*/
-
-    double ppmCO = co.measure();
-    double ppmCO2 = co2.measure();
-    String pm25 = pm.pm25;
-    String pm10 = pm.pm10;
-
-    Serial.print("CO = "); //TODO: These statements are for testing and can be removed
-    Serial.println(ppmCO);
-    Serial.print("CO2 = ");
-    Serial.println(ppmCO2);
-    Serial.print("PM25 = ");
-    Serial.println(pm25);
-    Serial.print("PM10 = ");
-    Serial.println(pm10);
-
-    if (!sd.isConnected) { //TODO: Repeated code from setup(); move to its own function?
-        for (int i = 0; i < 3; i++) {
-          LED_RED();
-          delay(1000);
-          LED_OFF();
-          delay(1000);
-      }
-    } else {
-      sd.writeToFile(now, ppmCO, ppmCO2, pm25, pm10);
-    }
-    
-    sensorsOff();
-    
-    //TODO: Does 60 second delay includes measurement time or no?
 }
-
-void sensorsOn() {
-    digitalWrite(power, HIGH);
-}
-
-void sensorsOff() {
-    digitalWrite(power, LOW);
-}
-
 
 void LED_ON() {
     digitalWrite(RED, HIGH);
     digitalWrite(GREEN, HIGH);
     digitalWrite(BLUE, HIGH);
+    return;
 }
 
 void LED_OFF() {
     digitalWrite(RED, LOW);
     digitalWrite(GREEN, LOW);
     digitalWrite(BLUE, LOW);
+    return;
 }
 
 void LED_RED() {
@@ -148,6 +98,7 @@ void LED_RED() {
     digitalWrite(RED, HIGH);
     digitalWrite(GREEN, LOW);
     digitalWrite(BLUE, LOW);
+    return;
 }
 
 void LED_GREEN() {
@@ -155,6 +106,7 @@ void LED_GREEN() {
     digitalWrite(RED, LOW);
     digitalWrite(GREEN, HIGH);
     digitalWrite(BLUE, LOW);
+    return;
 }
 
 void LED_BLUE() {
@@ -162,21 +114,79 @@ void LED_BLUE() {
     digitalWrite(RED, LOW);
     digitalWrite(GREEN, LOW);
     digitalWrite(BLUE, HIGH);
+    return;
 }
 
-double average(double values[], int len) {
-    //Averages values from an array and ignores values of -1
-    double sum = 0.0;
-    int count = 0;
-    for (int i = 0; i < len; i++) {
-        if (values[i] != -1 ) {
-            sum += values[i];
-            count++;
-        }
+void printHeader() { //Prints column headers to csv file
+    myFile = SD.open(fileName, FILE_WRITE);
+    
+    if (myFile) { // Write to the file if it opened correctly
+        Serial.println("Successfully connected to SD card");
+        //Prints the headers to the SD card file
+        myFile.print("Fecha");  //Date
+        myFile.print(",      ");
+        myFile.print("Hora");  //Timestamp
+        myFile.print(",      ");
+        myFile.print("CO");  //CO concentration, ppm
+        myFile.print(",      ");
+        myFile.print("CO2");    //CO2 concentration, ppm
+        myFile.print(",      ");
+        myFile.print("Materia Particular 2.5um");    //PM concentration,
+        myFile.print(",      ");
+        myFile.print("Materia Particular 10um");    //PM concentration,
+        myFile.print(",      ");
+        myFile.println("      ");
+        myFile.close();
+        return;
     }
-    if (count == 0) {
-        return -1;
+    else {
+        Serial.println("Failed to connect to SD card");
+        LED_RED();
+        delay(5000);
+        return;
     }
-    double avg = sum / double(count);
-    return avg;
+}
+
+void writeToFile(DateTime now, double CO, double CO2, String pm25, String pm10) { //Writes most recent values to the csv file
+    myFile = SD.open(fileName, FILE_WRITE);
+    
+    if (myFile) {  // Write to the file if it opened correctly
+        Serial.println("Successfully connected to SD card");
+
+        //Write Date Day/Month/Year (Custom in Peru)
+        myFile.print(now.day(), DEC);
+        myFile.print('/');
+        myFile.print(now.month(), DEC);
+        myFile.print('/');
+        myFile.print(now.year(), DEC);
+        myFile.print(",      ");
+
+        //Write Time
+        myFile.print(now.hour(), DEC);
+        myFile.print(':');
+        myFile.print(now.minute(), DEC);
+        myFile.print(':');
+        myFile.print(now.second(), DEC);
+        myFile.print(",      ");
+
+        //write Measured Concentrations
+        myFile.print(CO);  //CO concentration, ppm
+        myFile.print(",      ");
+        myFile.print(CO2);    //CO2 concentration, ppm
+        myFile.print(",      ");
+        myFile.print(pm25);    //PM 2.5um concentration,
+        myFile.print(",      ");
+        myFile.print(pm10);    //PM 10um concentration,
+        myFile.print(",      ");
+        myFile.println("      ");
+        myFile.close();
+        return;
+    }
+    else {
+        Serial.println("Failed to connect to SD card");
+        LED_RED();
+        delay(5000);
+        return;
+    }
+
 }
