@@ -143,7 +143,6 @@ void loop() {
 
       rtc.enableCountdownTimer(PCF8523_FrequencyMinute, 1);
 
-
       delay(2000);
       attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), isr, FALLING);
       LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
@@ -357,6 +356,13 @@ void initSensors(bool pmInit, bool coInit, bool co2Init, bool rtcInit) {
   }
   if (rtcInit) {
     rtc.begin();  // Initializes real time clock, uses RTC library
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));   // Will set the real time clock to the time from the computer system
+    
+    if (!rtc.isrunning()) {
+      Serial.println("RTC is not running! Setting __DATE__ and __TIME__ to the date and time of last compile.");
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
+    
+//    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));   // Will set the real time clock to the time from the computer system
+
   }
 }
