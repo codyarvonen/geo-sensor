@@ -168,8 +168,10 @@ void loop() {
       pm.measure();             // PM sensor reads measurements, variables in PM library will contain the results
       pm2_5 = pm.pm2_5;         // Concentration of PM that is 2.5micrometers
       pm10 = pm.pm10;           // Concentration of PM that is 10micrometers
-      ppmCO = co.measure();     // Concentration of CO in parts per million
-      ppmCO2 = co2.measure();   // Concentration of CO2 in parts per million
+//      ppmCO = co.measure();     // Concentration of CO in parts per million
+//      ppmCO2 = co2.measure();   // Concentration of CO2 in parts per million
+      ppmCO = (co.measure() * 26.942) - 415.29;
+      ppmCO2 = (co2.measure() * 1.3609) - 91.067;
       break;
     case writeData:
       Serial.println("STATE: writeData");
