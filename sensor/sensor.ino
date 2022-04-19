@@ -173,7 +173,7 @@ void loop() {
       pm2_5 = pm.pm2_5;     // Concentration of PM that is 2.5micrometers
       pm10 = pm.pm10;       // Concentration of PM that is 10micrometers
       ppmCO = (co.measure() * calibratedSlopeCO) + calibratedInterceptCO;           // Concentration of CO in parts per million
-      ppmCO2 = (co2.measure() * calibratedInterceptCO2) + calibratedInterceptCO2;   // Concentration of CO2 in parts per million
+      ppmCO2 = (co2.measure() * calibratedSlopeCO2) + calibratedInterceptCO2;   // Concentration of CO2 in parts per million
       break;
     case writeData:
       Serial.println("STATE: writeData");
