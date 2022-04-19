@@ -15,60 +15,61 @@
 #include <LowPower.h> // Library to enable sleep mode
 
 // PIN NUMBERS
-#define RED 24    // Pin number for Red in RGB LED
-#define GREEN 26  // Pin number for Green in RGB LED
-#define BLUE 22   // Pin number for Blue in RGB LED
-#define FAN 13    // Pin number for MOSFET (controls power to the fan)
-#define CS 53     // Pin number for SD card reader
-
-#define INTERRUPT_PIN 18
+#define RED 24        // Pin number for Red in RGB LED
+#define GREEN 26      // Pin number for Green in RGB LED
+#define BLUE 22       // Pin number for Blue in RGB LED
+#define FAN 13        // Pin number for MOSFET (controls power to the fan)
+#define CS 53         // Pin number for SD card reader
+#define INTERRUPT 18  // Pin number for the RTC interrupt
 
 // OBJECTS
-RTC_PCF8523 rtc;  // Real time clock object
+RTC_PCF8523 rtc;      // Real time clock object
 PM pm;
 CO2 co2;
 CO co;
 
 // GLOBAL VARIABLES
-File myFile;      // File variable for writing to SD card
-String fileName = "datos.csv";
+File myFile;          // File variable for writing to SD card
 
+String fileName = "datos.csv";
 String pm2_5;
 String pm10;
+
 double ppmCO = 0;
 double ppmCO2 = 0;
 
+// Calibrated parameters for mapping the CO and CO2 values 
+double calibratedInterceptCO = -431.29;
+double calibratedSlopeCO = 30.036;
+double calibratedInterceptCO2 = -254.05;
+double calibratedSlopeCO2 = 2.1045;
+
+// Enumeration of state variable for the state machine
 enum state {sleep, fanOn, fanOff, measure, writeData, errorSD, errorMeasure};
 enum state currentState;
 
+
 void setup() {
 
-  pinMode(INTERRUPT_PIN, INPUT_PULLUP); // Initialize the interrupt pin with the internal pull up resistor in the Arduino
-//  pinMode(LED_BUILTIN, OUTPUT);
-
-  pinMode(FAN, OUTPUT);       // Configures MOSFET pin as OUTPUT
-  pinMode(RED, OUTPUT);       // Configures RED pin as OUTPUT
-  pinMode(BLUE, OUTPUT);      // Configures BLUE pin as OUTPUT
-  pinMode(GREEN, OUTPUT);     // Configures GREEN pin as OUTPUT
-  digitalWrite(FAN, LOW);     // Sets MOSFET pin to LOW
-  LED_OFF();                  // Sets color pins to LOW
-  delay(500);
+  pinMode(INTERRUPT, INPUT_PULLUP); // Initialize the interrupt pin with the internal pull up resistor in the Arduino
+  pinMode(FAN, OUTPUT);             // Configures MOSFET pin as OUTPUT
+  pinMode(RED, OUTPUT);             // Configures RED pin as OUTPUT
+  pinMode(BLUE, OUTPUT);            // Configures BLUE pin as OUTPUT
+  pinMode(GREEN, OUTPUT);           // Configures GREEN pin as OUTPUT
+  digitalWrite(FAN, LOW);           // Sets MOSFET pin to LOW
   
+  LED_OFF();
+  delay(500);
   LED_ON();
   delay(2000);
   
   Serial.begin(9600);   // Begin serial communication for printing to serial monitor
   Serial3.begin(9600);  // Serial3 will be used to communicate with the PM sensor
+  
   Serial.println("Los Encendidos Cookstove Sensor");
 
-  initSensors(true, true, true, true);
-
-  // https://adafruit.github.io/RTClib/html/class_r_t_c___p_c_f8523.html
-  // https://brainwagon.org/2019/04/03/template-program-that-uses-a-ds3231-rtc-to-wake-up-an-arduino/
-
+  initSensors(true, true, true, true, true);
   currentState = fanOff;
-
-  SD.begin();
 
   LED_OFF();
   delay(2000);
@@ -126,10 +127,13 @@ void loop() {
       }
       break;
     case errorMeasure:
-      // IMPLEMENT THIS STATE (CHECKSUM FAIL, ETC.)
+      // TODO: Implement the functionality of this state.
+      //       The idea is to try to detect if communication
+      //       with any of the sensors has been interrupted
+      //       and enter this state if that is the case.
       break;
     default:
-      Serial.println("ERROR: No state has been specified");
+      Serial.println("ERROR: Unknown state");
       break;
   }
 
@@ -138,19 +142,19 @@ void loop() {
     case sleep:
       Serial.println("STATE: sleep");
       LED_OFF();
-
       Serial.println("MCU going to sleep...");
-
-      rtc.enableCountdownTimer(PCF8523_FrequencyMinute, 1);
-
+      rtc.enableCountdownTimer(PCF8523_FrequencyMinute, 1);             // Sets a one minute timer on the RTC
       delay(2000);
-      attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), isr, FALLING);
-      LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
-      
-      detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN));
-      rtc.disableCountdownTimer();
+      attachInterrupt(digitalPinToInterrupt(INTERRUPT), isr, FALLING);  // Connects the RTC SQW pin to the MCU interrupt pin 
+      LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);              // Turns off the MCU
+      detachInterrupt(digitalPinToInterrupt(INTERRUPT));                // Disconnects the RTC SQW pin to the MCU interrupt pin 
+      rtc.disableCountdownTimer();                                      // Turn off the timer
       delay(2000);
-      
+      // TODO: Determine if enableCountdownTimer and attachInterrupt
+      //       need to be called each time the state is entered or
+      //       only once at the beginning when initialized. My guess 
+      //       is that you would have to remove the detachInterrupt and 
+      //       disableCountdownTimer function calls.
       break;
     case fanOn:
       Serial.println("STATE: fanOn");
@@ -165,13 +169,11 @@ void loop() {
     case measure:
       Serial.println("STATE: measure");
       LED_BLUE();
-      pm.measure();             // PM sensor reads measurements, variables in PM library will contain the results
-      pm2_5 = pm.pm2_5;         // Concentration of PM that is 2.5micrometers
-      pm10 = pm.pm10;           // Concentration of PM that is 10micrometers
-//      ppmCO = co.measure();     // Concentration of CO in parts per million
-//      ppmCO2 = co2.measure();   // Concentration of CO2 in parts per million
-      ppmCO = (co.measure() * 26.942) - 415.29;
-      ppmCO2 = (co2.measure() * 1.3609) - 91.067;
+      pm.measure();         // PM sensor reads measurements, variables in PM library will contain the results
+      pm2_5 = pm.pm2_5;     // Concentration of PM that is 2.5micrometers
+      pm10 = pm.pm10;       // Concentration of PM that is 10micrometers
+      ppmCO = (co.measure() * calibratedSlopeCO) + calibratedInterceptCO;           // Concentration of CO in parts per million
+      ppmCO2 = (co2.measure() * calibratedInterceptCO2) + calibratedInterceptCO2;   // Concentration of CO2 in parts per million
       break;
     case writeData:
       Serial.println("STATE: writeData");
@@ -183,7 +185,10 @@ void loop() {
       SDCardSuccess = SD.begin();
       break;
     case errorMeasure:
-      // IMPLEMENT THIS STATE (CHECKSUM FAIL, ETC.)
+      // TODO: Implement the functionality of this state.
+      //       The idea is to try to detect if communication
+      //       with any of the sensors has been interrupted
+      //       and enter this state if that is the case.
       Serial.println("STATE: errorMeasure");
       break;
     default:
@@ -192,14 +197,20 @@ void loop() {
       break;
   }
   
-  delay(1000);
+  delay(1000);  // This gives the illusion that the loop() function is being called once per second
   
 }
 
 /*
- * Interrupt service routine
+ * Interrupt service routine:
+ * 
+ * When the attachInterrupt() function is called in the sleep state, 
+ * this function is specified as the interrupt service routine (isr).
+ * This means that when the RTC sends the interrupt signal, it calls 
+ * this function right when the MCU wakes up and then continues 
+ * execution where it left off (in the sleep state action).
+ * 
  */
- 
 void isr() {
   Serial.println("MCU is now awake");
 }
@@ -208,7 +219,6 @@ void isr() {
 /*
  * Helper functions
  */
- 
 void LED_ON() {
     digitalWrite(RED, HIGH);
     digitalWrite(GREEN, HIGH);
@@ -271,11 +281,16 @@ void LED_MAGENTA() {
     return;
 }
 
-bool printHeader() { //Prints column headers to csv file
+// Prints column headers to csv file
+bool printHeader() { 
+  
     myFile = SD.open(fileName, FILE_WRITE);
     
-    if (myFile) { // Write to the file if it opened correctly
+    // Write to the file if it opened correctly
+    if (myFile) { 
+      
         Serial.println("Successfully opened file on SD card!");
+        
         //Prints the headers to the SD card file
         myFile.print("Fecha");  //Date
         myFile.print(",      ");
@@ -302,12 +317,15 @@ bool printHeader() { //Prints column headers to csv file
 
 // Writes most recent values to the csv file
 bool writeToFile(DateTime now, double CO, double CO2, String pm2_5, String pm10) {
+  
     myFile = SD.open(fileName, FILE_WRITE);
-    
-    if (myFile) {  // Write to the file if it opened correctly
-        Serial.println("Successfully opened file on SD card!");
 
-        //Write Date Day/Month/Year (Custom in Peru)
+    // Write to the file if it opened correctly
+    if (myFile) {
+      
+        Serial.println("Successfully opened file on SD card!");
+        
+        // Write Date Day/Month/Year (Custom in Peru)
         myFile.print(now.day(), DEC);
         myFile.print('/');
         myFile.print(now.month(), DEC);
@@ -315,7 +333,7 @@ bool writeToFile(DateTime now, double CO, double CO2, String pm2_5, String pm10)
         myFile.print(now.year(), DEC);
         myFile.print(",      ");
 
-        //Write Time
+        // Write Time
         myFile.print(now.hour(), DEC);
         myFile.print(':');
         myFile.print(now.minute(), DEC);
@@ -323,20 +341,19 @@ bool writeToFile(DateTime now, double CO, double CO2, String pm2_5, String pm10)
         myFile.print(now.second(), DEC);
         myFile.print(",      ");
 
-        //write Measured Concentrations
-        myFile.print(CO);  //CO concentration, ppm
+        // Write Measured Concentrations
+        myFile.print(CO);         //CO concentration, ppm
         myFile.print(",      ");
-        myFile.print(CO2);    //CO2 concentration, ppm
+        myFile.print(CO2);        //CO2 concentration, ppm
         myFile.print(",      ");
-        myFile.print(pm2_5);    //PM 2.5um concentration,
+        myFile.print(pm2_5);      //PM 2.5um concentration,
         myFile.print(",      ");
-        myFile.print(pm10);    //PM 10um concentration,
+        myFile.print(pm10);       //PM 10um concentration,
         myFile.print(",      ");
         myFile.println("      ");
         myFile.close();
         
         Serial.println("Successfully written data to file on SD card!");
-        
         return true;
     }
     else {
@@ -345,12 +362,16 @@ bool writeToFile(DateTime now, double CO, double CO2, String pm2_5, String pm10)
     }
 }
 
-void initSensors(bool pmInit, bool coInit, bool co2Init, bool rtcInit) {
+// Initializes all of the sensors
+void initSensors(bool pmInit, bool coInit, bool co2Init, bool rtcInit, bool sdInit) {
+  if (sdInit) {
+    SD.begin();
+  }
   if (pmInit) {
-    pm.reset_measurement();
+    pm.reset_measurement();               // Opens communication with the PM sensor
   }
   if (co2Init) {
-    co2.scd30.begin();  // Intializes CO2 sensor
+    co2.scd30.begin();                    // Intializes CO2 sensor
     co2.scd30.setMeasurementInterval(1);  // Fastest communication time with CO2 Sensor
   }
   if (coInit) {
@@ -358,13 +379,16 @@ void initSensors(bool pmInit, bool coInit, bool co2Init, bool rtcInit) {
   }
   if (rtcInit) {
     rtc.begin();  // Initializes real time clock, uses RTC library
-    
     if (!rtc.isrunning()) {
       Serial.println("RTC is not running! Setting __DATE__ and __TIME__ to the date and time of last compile.");
-      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Will set the real time clock to the time from the computer system
     }
     
-//    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));   // Will set the real time clock to the time from the computer system
-
+    // If you wish to reset the date and time to the time of 
+    // last compile, uncomment this line of code. Otherwise,
+    // It will only get reset if the RTC stops running e.g.
+    // the battery dies, etc. 
+    
+    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));   
   }
 }
