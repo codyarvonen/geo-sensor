@@ -3,59 +3,27 @@
 // Arduino code for the cookstove sensor.
 // PM.cpp
 // This file contains function declarations for the PM sensor.
-// Much of this code is from https://medium.com/electronza/arduino-measuring-pm2-5-and-pm10-with-honeywell-hpma115s0-703f384c485a
-
 
 #include "PM.h"
 
 void PM::measure() {
-//  my_status = start_measurement(); 
-  my_status = read_measurement();  // The read_measurement function stops and then starts the sensor measurement 
+  my_status = read_measurement();
 
   // Convert floats to strings in order to print to SD card
-  String stringPM2_5 = String(f_PN2_5);
-  String stringPM10 = String(f_PN10);
-
-  // Print statements commented; can be uncommented for testing purposes
-  /*Serial.print("Read measurement status is ");
-    Serial.print("PM1.0 GRIMM value is ");
-    Serial.println(f_PM1_0G);
-    Serial.print("PM2.5 GRIMM value is ");
-    Serial.println(f_PM2_5G);
-    Serial.print("PM10 GRIMM value is ");
-    Serial.println(f_PM10G);
-    Serial.print("PM1.0 TSI value is ");
-    Serial.println(f_PM1_0T);
-    Serial.print("PM2.5 TSI value is ");
-    Serial.println(f_PM2_5T);
-    Serial.print("PM10 TSI value is ");
-    Serial.println(f_PM10T);
-    Serial.print("Particles number >0.3um is ");
-    Serial.println(f_PN0_3);
-    Serial.print("Particles number >0.5um is ");
-    Serial.println(f_PN0_5);
-    Serial.print("Particles number >1.0um is ");
-    Serial.println(f_PN1_0);
-    Serial.print("Particles number >2.5um is ");
-    Serial.println(f_PN2_5);
-    Serial.print("Particles number >5.0um is ");
-    Serial.println(f_PN5_0);
-    Serial.print("Particles number >10um is ");
-    Serial.println(f_PN10);
-    Serial.println(" ");*/
+  String stringPM2_5 = String(f_PM2_5G);
+  String stringPM10 = String(f_PM10G);
 
   //Currently only PM2.5 and PM10 are printed to the .csv file, the other values can be returned if desired
   pm2_5 = stringPM2_5;
   pm10 = stringPM10;
-  
-//  my_status = stop_measurement();
 }
 
-bool PM::start_measurement(void)
-{
+bool PM::start_measurement(void) {
+  
   // First, we send the command
   byte start_measurement[] = {0x11, 0x03, 0x0C, 0x02, 0x1E, 0xC0};
   Serial3.write(start_measurement, sizeof(start_measurement));
+  
   // Then we wait for the responce
   while(Serial3.available() < 1);
   byte HEAD = Serial3.read();
@@ -67,6 +35,7 @@ bool PM::start_measurement(void)
   byte DF1 = Serial3.read();
   while(Serial3.available() < 1);
   byte CS = Serial3.read();
+  
   // Test the response
   if ((0x100 - HEAD - LEN - CMD - DF1) != CS) { 
     Serial.println("Start measurement checksum fail");
@@ -78,11 +47,12 @@ bool PM::start_measurement(void)
   }
 }
 
-bool PM::stop_measurement(void)
-{
+bool PM::stop_measurement(void) {
+  
   // First, we send the command
   byte stop_measurement[] = {0x11, 0x03, 0x0C, 0x01, 0x1E, 0xC1};
   Serial3.write(stop_measurement, sizeof(stop_measurement));
+  
   // Then we wait for the responce
   while(Serial3.available() < 1);
   byte HEAD = Serial3.read();
@@ -94,6 +64,7 @@ bool PM::stop_measurement(void)
   byte DF1 = Serial3.read();
   while(Serial3.available() < 1);
   byte CS = Serial3.read();
+  
   // Test the response
   if ((0x100 - HEAD - LEN - CMD - DF1) != CS) { 
     Serial.println("Stop measurement checksum fail");
@@ -104,11 +75,12 @@ bool PM::stop_measurement(void)
   }
 }
 
-bool PM::read_measurement (void)
-{
+bool PM::read_measurement (void) {
+  
   // First, we send the command
   byte read_measurement[] = {0x11, 0x02, 0x0B, 0x07, 0xDB};
   Serial3.write(read_measurement, sizeof(read_measurement));
+  
   // Then we wait for the responce
   while(Serial3.available() < 1);
   byte HEAD = Serial3.read();
@@ -117,12 +89,15 @@ bool PM::read_measurement (void)
   while(Serial3.available() < 1);
   byte CMD = Serial3.read();
   byte DF[52];
-  for (int i = 0; i < 52; i++) { // Iterate through the input until all data bytes are collected
+
+  // Iterate through the input until all data bytes are collected
+  for (int i = 0; i < 52; i++) { 
     while(Serial3.available() < 1);
     DF[i] = Serial3.read();
   }
   while(Serial3.available() < 1);
   byte CS = Serial3.read();
+  
   // Then we add all the data bytes together and store it as an int
   int DATA = 0;
   for (int i = 0; i < 52; i++) {
@@ -132,23 +107,16 @@ bool PM::read_measurement (void)
   int response_sum = HEAD + LEN + CMD + DATA;
   int factor = (response_sum/256) + 1;
 
-  // Uncomment for debbugging
-  /*Serial.println("HEAD = ");
-  Serial.println(HEAD);
-  Serial.println("LEN = ");
-  Serial.println(LEN);
-  Serial.println("CMD = ");
-  Serial.println(CMD);
-  Serial.println("DATA = ");
-  Serial.println(DATA);
-  Serial.println("CS = ");
-  Serial.println(CS);
-  Serial.println("Response Sum = ");
-  Serial.println(response_sum);
-  Serial.println("Factor = ");
-  Serial.println(factor);
-  Serial.println("((0x100 * factor) - response_sum) = ");
-  Serial.println(((0x100 * factor) - response_sum));*/
+  // NOTE: The calculation method for the checksum and data values 
+  //       is outlined on the PM sensor datasheet. However, we had 
+  //       to make updates to the way the checksum is calculated.
+  //       If response_sum is larger than 256, we found that the 
+  //       checksum will always fail because it will be negative. 
+  //       This caused the a checksum fail every time we tested the 
+  //       sensor in an environment with lots of particulate matter.
+  //       So, for every factor over 256 response_sum ends up being, 
+  //       we multiply it by 0x100 (256 in hex) before we subtract 
+  //       response_sum. 
   
   // Test the response
   if (((0x100 * factor) - response_sum) != CS) { 
@@ -177,17 +145,8 @@ bool PM::read_measurement (void)
 }
 
 void PM::reset_measurement(void) {
-//  Serial.println("RESET MEASUREMENT");
-//  Serial.println("Closing and opening measurment ");
-//  delay(1000);
-  
   my_status = stop_measurement();
-//  Serial.println("Stop measurement status is ");
-//  Serial.println(my_status);
   delay(1000);
-
   my_status = start_measurement();
-//  Serial.println("Start measurement status is ");
-//  Serial.println(my_status);
   delay(1000);
 }
